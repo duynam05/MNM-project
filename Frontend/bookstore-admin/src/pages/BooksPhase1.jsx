@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 
 import MaterialIcon from '../components/MaterialIcon';
+import { resolveImageUrl } from '../config/api';
 
 const PAGE_SIZE = 8;
 
@@ -311,4 +312,3 @@ export function BookFormPhase1({ mode, book, submitting, uploadLoading, error, o
     </main>
   );
 }
-import { resolveImageUrl } from '../config/api';

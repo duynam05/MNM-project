@@ -102,6 +102,10 @@ class BookController extends Controller
             ]);
         }
 
+        if (! $request->file('file')->isValid()) {
+            abort(400, 'Invalid image upload');
+        }
+
         $path = $request->file('file')->storeAs(
             'books',
             Str::uuid()->toString().'.'.$request->file('file')->getClientOriginalExtension(),

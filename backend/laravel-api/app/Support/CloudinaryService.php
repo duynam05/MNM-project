@@ -14,33 +14,39 @@ class CloudinaryService
             return null;
         }
 
-        $timestamp = now()->timestamp;
-        $payload = [
-            'folder' => $this->folder($folder),
-            'timestamp' => (string) $timestamp,
-        ];
+        try {
+            $timestamp = now()->timestamp;
+            $payload = [
+                'folder' => $this->folder($folder),
+                'timestamp' => (string) $timestamp,
+            ];
 
-        $payload = array_filter($payload, fn (mixed $value) => filled($value));
-        $signature = $this->sign($payload);
-        $url = sprintf(
-            'https://api.cloudinary.com/v1_1/%s/image/upload',
-            $this->cloudName(),
-        );
+            $payload = array_filter($payload, fn (mixed $value) => filled($value));
+            $signature = $this->sign($payload);
+            $url = sprintf(
+                'https://api.cloudinary.com/v1_1/%s/image/upload',
+                $this->cloudName(),
+            );
 
-        $response = Http::timeout(60)
-            ->attach('file', file_get_contents($file->getRealPath()), $file->getClientOriginalName())
-            ->post($url, array_merge($payload, [
-                'api_key' => $this->apiKey(),
-                'signature' => $signature,
-            ]));
+            $response = Http::timeout(60)
+                ->attach('file', file_get_contents($file->getRealPath()), $file->getClientOriginalName())
+                ->post($url, array_merge($payload, [
+                    'api_key' => $this->apiKey(),
+                    'signature' => $signature,
+                ]));
 
-        $response->throw();
+            if (! $response->successful()) {
+                return null;
+            }
 
-        return [
-            'url' => $response->json('secure_url') ?: $response->json('url'),
-            'publicId' => $response->json('public_id'),
-            'assetId' => $response->json('asset_id'),
-        ];
+            return [
+                'url' => $response->json('secure_url') ?: $response->json('url'),
+                'publicId' => $response->json('public_id'),
+                'assetId' => $response->json('asset_id'),
+            ];
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     public function isConfigured(): bool
