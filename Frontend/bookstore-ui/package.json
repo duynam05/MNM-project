@@ -2,7 +2,7 @@
   "name": "bookstore-ui",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://duynam05.github.io/web-project",
+  "homepage": "https://duynam05.github.io/MNM-project",
   "dependencies": {
     "gh-pages": "^6.3.0",
     "jwt-decode": "^4.0.0",
