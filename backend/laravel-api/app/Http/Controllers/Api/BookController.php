@@ -102,6 +102,10 @@ class BookController extends Controller
             ]);
         }
 
+        if ($this->cloudinaryService->isConfigured()) {
+            abort(502, 'Cloudinary upload failed');
+        }
+
         if (! $request->file('file')->isValid()) {
             abort(400, 'Invalid image upload');
         }

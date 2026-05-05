@@ -4,6 +4,7 @@ namespace App\Support;
 
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class CloudinaryService
@@ -36,6 +37,10 @@ class CloudinaryService
                 ]));
 
             if (! $response->successful()) {
+                Log::warning('Cloudinary upload failed', [
+                    'status' => $response->status(),
+                    'body' => $response->json(),
+                ]);
                 return null;
             }
 
@@ -44,7 +49,10 @@ class CloudinaryService
                 'publicId' => $response->json('public_id'),
                 'assetId' => $response->json('asset_id'),
             ];
-        } catch (\Throwable) {
+        } catch (\Throwable $throwable) {
+            Log::warning('Cloudinary upload exception', [
+                'message' => $throwable->getMessage(),
+            ]);
             return null;
         }
     }
