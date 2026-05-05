@@ -9,10 +9,13 @@ use Illuminate\Support\Str;
 
 class CloudinaryService
 {
-    public function uploadImage(UploadedFile $file, ?string $folder = null): ?array
+    public function uploadImage(UploadedFile $file, ?string $folder = null): array
     {
         if (! $this->isConfigured()) {
-            return null;
+            return [
+                'success' => false,
+                'error' => 'Cloudinary is not configured',
+            ];
         }
 
         try {
@@ -41,10 +44,16 @@ class CloudinaryService
                     'status' => $response->status(),
                     'body' => $response->json(),
                 ]);
-                return null;
+                return [
+                    'success' => false,
+                    'error' => $response->json('error.message')
+                        ?: $response->json('error')
+                        ?: 'Cloudinary upload failed',
+                ];
             }
 
             return [
+                'success' => true,
                 'url' => $response->json('secure_url') ?: $response->json('url'),
                 'publicId' => $response->json('public_id'),
                 'assetId' => $response->json('asset_id'),
@@ -53,7 +62,10 @@ class CloudinaryService
             Log::warning('Cloudinary upload exception', [
                 'message' => $throwable->getMessage(),
             ]);
-            return null;
+            return [
+                'success' => false,
+                'error' => $throwable->getMessage(),
+            ];
         }
     }
 
@@ -92,7 +104,7 @@ class CloudinaryService
             ->map(fn (mixed $value, string $key) => $key.'='.$this->normalizeValue($value))
             ->implode('&');
 
-        return hash_hmac('sha1', $query, $this->apiSecret());
+        return sha1($query.$this->apiSecret());
     }
 
     private function normalizeValue(mixed $value): string

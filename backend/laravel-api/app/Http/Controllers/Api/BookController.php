@@ -94,7 +94,7 @@ class BookController extends Controller
         ]);
 
         $uploaded = $this->cloudinaryService->uploadImage($request->file('file'), 'books');
-        if ($uploaded && filled($uploaded['url'] ?? null)) {
+        if (($uploaded['success'] ?? false) && filled($uploaded['url'] ?? null)) {
             return $this->ok([
                 'url' => $uploaded['url'],
                 'publicId' => $uploaded['publicId'] ?? null,
@@ -103,7 +103,7 @@ class BookController extends Controller
         }
 
         if ($this->cloudinaryService->isConfigured()) {
-            abort(502, 'Cloudinary upload failed');
+            abort(502, (string) ($uploaded['error'] ?? 'Cloudinary upload failed'));
         }
 
         if (! $request->file('file')->isValid()) {

@@ -17,6 +17,7 @@ export async function apiRequest(path, options = {}) {
   const response = await fetch(buildApiUrl(path), {
     ...rest,
     headers: {
+      Accept: 'application/json',
       ...(headers || {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
