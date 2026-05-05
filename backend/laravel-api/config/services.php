@@ -35,6 +35,13 @@ return [
         ],
     ],
 
+    'cloudinary' => [
+        'cloud_name' => env('CLOUDINARY_CLOUD_NAME', ''),
+        'api_key' => env('CLOUDINARY_API_KEY', ''),
+        'api_secret' => env('CLOUDINARY_API_SECRET', ''),
+        'folder' => env('CLOUDINARY_FOLDER', 'bookstore'),
+    ],
+
     'payment' => [
         'bank_transfer' => [
             'bank_id' => env('APP_PAYMENT_BANK_TRANSFER_BANK_ID', '970418'),

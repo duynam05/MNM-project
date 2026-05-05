@@ -149,7 +149,7 @@ export function BooksPhase1({
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-4">
                         <div className="relative h-16 w-12 flex-shrink-0 overflow-hidden rounded border border-slate-100 shadow-sm">
-                          {book.image ? <img alt={`${book.title} Cover`} className="h-full w-full object-cover" src={book.image} /> : <div className="h-full w-full bg-slate-100" />}
+                          {book.image ? <img alt={`${book.title} Cover`} className="h-full w-full object-cover" src={resolveImageUrl(book.image)} /> : <div className="h-full w-full bg-slate-100" />}
                         </div>
                         <div>
                           <h4 className="leading-tight font-bold text-slate-900 transition-colors group-hover:text-blue-600">{book.title}</h4>
@@ -279,7 +279,7 @@ export function BookFormPhase1({ mode, book, submitting, uploadLoading, error, o
               <label className="mb-4 block text-[0.7rem] font-bold uppercase tracking-[0.1em] text-slate-500">Ảnh bìa sách</label>
               <label className="flex aspect-[3/4] w-full cursor-pointer flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-8 transition-all hover:border-blue-300 hover:bg-blue-50/40 active:scale-[0.98]">
                 {form.image ? (
-                  <img alt="Book Cover" className="h-full max-h-72 w-full rounded-lg object-cover" src={form.image} />
+                  <img alt="Book Cover" className="h-full max-h-72 w-full rounded-lg object-cover" src={resolveImageUrl(form.image)} />
                 ) : (
                   <>
                     <MaterialIcon className="text-4xl text-slate-400 transition-colors group-hover:text-blue-600">add_photo_alternate</MaterialIcon>
@@ -311,3 +311,4 @@ export function BookFormPhase1({ mode, book, submitting, uploadLoading, error, o
     </main>
   );
 }
+import { resolveImageUrl } from '../config/api';

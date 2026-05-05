@@ -293,7 +293,7 @@ function ReviewCard({
         <div className="mb-8 grid grid-cols-12 gap-8">
           <div className="col-span-3">
             <div className="mb-4 flex gap-4">
-              <img alt={review.title} className="h-28 w-20 rounded object-cover shadow-sm" src={review.image} />
+              <img alt={review.title} className="h-28 w-20 rounded object-cover shadow-sm" src={resolveImageUrl(review.image)} />
               <div className="flex flex-col justify-center">
                 <h4 className="mb-1 text-base font-bold leading-tight text-slate-900">{review.title}</h4>
                 <p className="text-xs text-slate-500">{review.author}</p>
@@ -383,7 +383,7 @@ function ReviewCard({
           <img
             alt={review.title}
             className={`h-28 w-20 rounded object-cover shadow-sm ${review.status === 'PENDING' ? 'opacity-80' : ''}`}
-            src={review.image}
+            src={resolveImageUrl(review.image)}
           />
           <div className="flex flex-col justify-center">
             <h4 className="mb-1 text-base font-bold leading-tight text-slate-900">{review.title}</h4>
@@ -977,3 +977,4 @@ function ReviewsPage({ token, searchValue }) {
 }
 
 export default ReviewsPage;
+import { resolveImageUrl } from '../config/api';

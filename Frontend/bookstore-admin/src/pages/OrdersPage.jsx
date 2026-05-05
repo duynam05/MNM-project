@@ -177,7 +177,7 @@ function DetailPanel({ selectedOrder, onCloseDetail }) {
             {(selectedOrder.items || []).map((item) => (
               <div key={item.id} className="flex items-center gap-4 rounded-xl border border-slate-100 p-4">
                 <div className="h-16 w-12 overflow-hidden rounded border border-slate-100 bg-slate-50">
-                  {item.image ? <img alt={item.title} className="h-full w-full object-cover" src={item.image} /> : null}
+                  {item.image ? <img alt={item.title} className="h-full w-full object-cover" src={resolveImageUrl(item.image)} /> : null}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-bold text-slate-900">{item.title}</p>
@@ -541,3 +541,4 @@ export default function OrdersPage({
     </main>
   );
 }
+import { resolveImageUrl } from '../config/api';

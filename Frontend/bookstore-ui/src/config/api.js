@@ -36,6 +36,14 @@ export const resolveImageUrl = (imagePath) => {
     return imagePath;
   }
 
+  if (imagePath.startsWith('/')) {
+    return `${API_BASE_URL}${imagePath}`;
+  }
+
+  if (imagePath.startsWith('storage/')) {
+    return `${API_BASE_URL}/${imagePath}`;
+  }
+
   return imagePath;
 };
 

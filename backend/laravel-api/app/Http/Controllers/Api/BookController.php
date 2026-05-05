@@ -3,14 +3,18 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\Book;
+use App\Support\CloudinaryService;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class BookController extends Controller
 {
+    public function __construct(private readonly CloudinaryService $cloudinaryService)
+    {
+    }
+
     public function index(Request $request)
     {
         $query = Book::query();
@@ -88,6 +92,15 @@ class BookController extends Controller
         $request->validate([
             'file' => ['required', 'file', 'image', 'max:5120'],
         ]);
+
+        $uploaded = $this->cloudinaryService->uploadImage($request->file('file'), 'books');
+        if ($uploaded && filled($uploaded['url'] ?? null)) {
+            return $this->ok([
+                'url' => $uploaded['url'],
+                'publicId' => $uploaded['publicId'] ?? null,
+                'assetId' => $uploaded['assetId'] ?? null,
+            ]);
+        }
 
         $path = $request->file('file')->storeAs(
             'books',
