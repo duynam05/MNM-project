@@ -12,7 +12,7 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(buildApiUrl('/books'))
+    fetch(buildApiUrl('/books?page=0&size=16&sort=popular'))
       .then((res) => {
         if (!res.ok) {
           throw new Error('Failed to load home books');

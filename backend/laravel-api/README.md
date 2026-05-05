@@ -45,8 +45,8 @@ php artisan serve --host=127.0.0.1 --port=8000
 
 Mặc định trong `.env`:
 
-- Email: `admin@bookstore.local`
-- Password: `Admin@123456`
+- Email: `admin@admin.com`
+- Password: `12345678`
 
 Laravel sẽ tự tạo role `USER`, `ADMIN`, system settings mặc định và admin bootstrap khi bảng đã tồn tại.
 

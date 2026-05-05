@@ -45,6 +45,7 @@ function getTransferInfo(order) {
     accountNumber: session?.accountNumber || '8860383073',
     accountHolder: session?.accountHolder || 'TRINH DUY NAM',
     qrUrl: session?.qrUrl || '',
+    paymentUrl: session?.paymentUrl || '',
     expiresAt: session?.expiresAt || '',
     sessionStatus: session?.status || '',
   };

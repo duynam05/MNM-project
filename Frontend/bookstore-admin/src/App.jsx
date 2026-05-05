@@ -58,6 +58,13 @@ function normalizeText(value) {
     .toLowerCase();
 }
 
+function splitCategories(value) {
+  return String(value || '')
+    .split(/\s*(?:,|;|\||\/|\s-\s)\s*/u)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 function SideNav({ currentPage, onNavigate, onLogout }) {
   const subtitle = 'Hệ thống quản lý sách';
 
@@ -606,7 +613,7 @@ function App() {
 
   const normalizedBookSearch = normalizeText(bookSearch);
   const bookCategories = Array.from(new Set(
-    books.map((book) => (book.category || '').trim()).filter(Boolean),
+    books.flatMap((book) => splitCategories(book.category)),
   )).sort((left, right) => left.localeCompare(right, 'vi'));
 
   const visibleBooks = books.filter((book) => {
@@ -614,7 +621,9 @@ function App() {
       !normalizedBookSearch ||
       [book.title, book.author, book.category, book.id].some((value) => normalizeText(value).includes(normalizedBookSearch));
 
-    const matchesCategory = bookCategoryFilter === 'all' || (book.category || '').trim() === bookCategoryFilter;
+    const matchesCategory =
+      bookCategoryFilter === 'all' ||
+      splitCategories(book.category).some((category) => category === bookCategoryFilter);
 
     const stock = Number(book.stock || 0);
     const matchesStock =

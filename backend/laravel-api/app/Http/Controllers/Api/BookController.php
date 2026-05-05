@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\Book;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -22,10 +24,6 @@ class BookController extends Controller
             });
         }
 
-        if ($request->filled('category')) {
-            $query->where('category', trim((string) $request->query('category')));
-        }
-
         match (strtolower((string) $request->query('sort', 'popular'))) {
             'price_asc' => $query->orderBy('price')->orderBy('title'),
             'price_desc' => $query->orderByDesc('price')->orderBy('title'),
@@ -36,8 +34,19 @@ class BookController extends Controller
         };
 
         $size = min(max((int) $request->query('size', 12), 1), 100);
-        $page = max((int) $request->query('page', 0), 0) + 1;
-        $paginator = $query->paginate($size, ['*'], 'page', $page);
+        $page = max((int) $request->query('page', 0), 0);
+        $category = trim((string) $request->query('category', ''));
+
+        if ($category !== '') {
+            $books = $query
+                ->get()
+                ->filter(fn (Book $book) => $this->bookHasCategory($book, $category))
+                ->values();
+
+            $paginator = $this->paginateCollection($books, $size, $page);
+        } else {
+            $paginator = $query->paginate($size, ['*'], 'page', $page + 1);
+        }
 
         return $this->ok([
             'content' => $paginator->items(),
@@ -102,5 +111,38 @@ class BookController extends Controller
             'stock' => ['required', 'integer', 'min:0'],
             'image' => ['nullable', 'string'],
         ]);
+    }
+
+    private function bookHasCategory(Book $book, string $category): bool
+    {
+        $needle = Str::lower(trim($category));
+
+        return collect($this->splitCategories($book->category))
+            ->map(fn (string $item) => Str::lower($item))
+            ->contains($needle);
+    }
+
+    private function splitCategories(?string $value): array
+    {
+        return collect(preg_split('/\s*(?:,|;|\||\/|\s-\s)\s*/u', (string) $value) ?: [])
+            ->map(fn (string $item) => trim($item))
+            ->filter()
+            ->unique(fn (string $item) => Str::lower($item))
+            ->values()
+            ->all();
+    }
+
+    private function paginateCollection(Collection $items, int $size, int $page): LengthAwarePaginator
+    {
+        $currentPage = $page + 1;
+        $total = $items->count();
+        $results = $items->slice($page * $size, $size)->values();
+
+        return new LengthAwarePaginator(
+            $results,
+            $total,
+            $size,
+            $currentPage,
+        );
     }
 }

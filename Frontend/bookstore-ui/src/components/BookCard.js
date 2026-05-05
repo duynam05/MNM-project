@@ -115,11 +115,11 @@ const BookCard = ({ book }) => {
 
   return (
     <div className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden flex flex-col h-full">
-      <Link to={`/book/${book.id}`} className="relative h-64 overflow-hidden group">
+      <Link to={`/book/${book.id}`} className="relative h-64 overflow-hidden bg-slate-50 group">
         <img
           src={resolveImageUrl(book.image)}
           alt={book.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          className="w-full h-full object-contain p-3 group-hover:scale-105 transition-transform duration-300"
           onError={(e) => {
             e.currentTarget.src = '/placeholder-book.svg';
           }}

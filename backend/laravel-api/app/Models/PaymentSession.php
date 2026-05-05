@@ -32,6 +32,7 @@ class PaymentSession extends Model
     {
         return [
             'amount' => 'decimal:2',
+            'provider_order_code' => 'integer',
             'expires_at' => 'datetime',
             'confirmed_at' => 'datetime',
         ];

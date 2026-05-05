@@ -20,6 +20,8 @@ class AppConstants
     public const PAYMENT_METHOD_COD = 'COD';
     public const PAYMENT_METHOD_BANK_TRANSFER = 'BANK_TRANSFER';
     public const PAYMENT_METHOD_ONLINE = 'ONLINE';
+    public const PAYMENT_PROVIDER_PAYOS = 'PAYOS';
+    public const PAYMENT_PROVIDER_MANUAL_BANK_QR = 'MANUAL_BANK_QR';
 
     public const PAYMENT_STATUS_UNPAID = 'UNPAID';
     public const PAYMENT_STATUS_PENDING = 'PENDING';

@@ -9,12 +9,21 @@ use App\Models\OrderItem;
 use App\Models\PaymentSession;
 use App\Support\ApiData;
 use App\Support\AppConstants;
+use App\Support\PaymentSessionService;
+use App\Support\PayOsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class OrderController extends Controller
 {
+    public function __construct(
+        private readonly PaymentSessionService $paymentSessionService,
+        private readonly PayOsService $payOsService,
+    ) {
+    }
+
     public function index(Request $request)
     {
         $orders = Order::query()
@@ -111,7 +120,12 @@ class OrderController extends Controller
         });
 
         if ($order->payment_method === AppConstants::PAYMENT_METHOD_BANK_TRANSFER) {
-            $this->ensurePaymentSession($order);
+            if (! $order->payment_reference) {
+                $order->update([
+                    'payment_reference' => $this->buildReference($order->id),
+                ]);
+            }
+            $this->paymentSessionService->getOrCreateBankTransferSession($order->fresh(['user', 'items.book']));
             $order->load('paymentSessions');
         }
 
@@ -137,7 +151,8 @@ class OrderController extends Controller
     {
         $this->assertUserCanAccess($request, $order);
         if ($order->payment_method === AppConstants::PAYMENT_METHOD_BANK_TRANSFER) {
-            $this->ensurePaymentSession($order);
+            $this->paymentSessionService->getOrCreateBankTransferSession($order->loadMissing(['user', 'items.book']));
+            $this->paymentSessionService->syncPaymentSession($order);
         }
         $order->load(['user', 'items.book', 'paymentSessions']);
 
@@ -147,7 +162,8 @@ class OrderController extends Controller
     public function adminPaymentSession(Order $order)
     {
         if ($order->payment_method === AppConstants::PAYMENT_METHOD_BANK_TRANSFER) {
-            $this->ensurePaymentSession($order);
+            $this->paymentSessionService->getOrCreateBankTransferSession($order->loadMissing(['user', 'items.book']));
+            $this->paymentSessionService->syncPaymentSession($order);
         }
         $order->load(['user', 'items.book', 'paymentSessions']);
 
@@ -187,6 +203,7 @@ class OrderController extends Controller
     public function cancel(Request $request, Order $order)
     {
         $this->assertUserCanAccess($request, $order);
+        $this->syncBankTransferPaymentIfNeeded($order);
         $this->cancelOrder($order);
 
         return $this->ok(ApiData::order($order->fresh(['user', 'items.book', 'paymentSessions'])));
@@ -211,18 +228,14 @@ class OrderController extends Controller
             'payment_reference' => $order->payment_reference ?: $this->buildReference($order->id),
         ]);
 
-        $session = $this->ensurePaymentSession($order);
-        $session->update([
-            'status' => AppConstants::PAYMENT_SESSION_STATUS_SUCCEEDED,
-            'provider_transaction_id' => 'MANUAL-'.now()->format('YmdHis'),
-            'confirmed_at' => now(),
-        ]);
+        $this->paymentSessionService->markSucceededForOrder($order, 'MANUAL-'.now()->format('YmdHis'));
 
         return $this->ok(ApiData::order($order->fresh(['user', 'items.book', 'paymentSessions'])));
     }
 
     public function adminUpdateStatus(Request $request, Order $order)
     {
+        $this->syncBankTransferPaymentIfNeeded($order);
         $payload = $request->validate([
             'status' => ['required', 'string'],
         ]);
@@ -278,100 +291,50 @@ class OrderController extends Controller
 
     public function payosWebhook(Request $request)
     {
-        $data = $request->input('data', []);
-        $orderCode = $data['orderCode'] ?? null;
-        $reference = $data['reference'] ?? null;
-        $paymentLinkId = $data['paymentLinkId'] ?? null;
+        $payload = $request->all();
+        $data = is_array($payload['data'] ?? null) ? $payload['data'] : null;
 
-        if ($orderCode === null && $reference === null && $paymentLinkId === null) {
+        if (! $data) {
+            Log::warning('payOS webhook ignored because payload or data is null');
             return $this->ok(false);
         }
 
-        $sessionQuery = PaymentSession::query();
-
-        if ($orderCode !== null) {
-            $sessionQuery->orWhere('provider_order_code', $orderCode);
-        }
-        if ($reference !== null) {
-            $sessionQuery->orWhere('reference', $reference);
-        }
-        if ($paymentLinkId !== null) {
-            $sessionQuery->orWhere('provider_payment_link_id', $paymentLinkId);
-        }
-
-        $session = $sessionQuery->latest('created_at')->first();
-        if (! $session) {
+        if (! $this->payOsService->verifyWebhookSignature($payload)) {
+            Log::warning('payOS webhook signature verification failed', [
+                'orderCode' => $data['orderCode'] ?? null,
+                'paymentLinkId' => $data['paymentLinkId'] ?? null,
+            ]);
             return $this->ok(false);
         }
 
-        $order = $session->order()->first();
-        if (! $order) {
+        $session = $this->paymentSessionService->findLatestByProviderOrderCode(
+            isset($data['orderCode']) ? (int) $data['orderCode'] : null
+        );
+
+        if (! $session || ! $session->order) {
+            Log::warning('payOS webhook could not find payment session', [
+                'providerOrderCode' => $data['orderCode'] ?? null,
+            ]);
             return $this->ok(false);
         }
+
+        $order = $session->order;
 
         if ($order->payment_status !== AppConstants::PAYMENT_STATUS_PAID) {
             $order->update([
                 'payment_method' => AppConstants::PAYMENT_METHOD_BANK_TRANSFER,
                 'payment_status' => AppConstants::PAYMENT_STATUS_PAID,
                 'paid_at' => now(),
-                'payment_reference' => $reference ?: $order->payment_reference ?: $this->buildReference($order->id),
+                'payment_reference' => $data['reference'] ?? $order->payment_reference ?: $this->buildReference($order->id),
                 'status' => in_array($order->status, [AppConstants::ORDER_STATUS_PENDING, AppConstants::ORDER_STATUS_PENDING_PAYMENT], true)
                     ? AppConstants::ORDER_STATUS_CONFIRMED
                     : $order->status,
             ]);
         }
 
-        $session->update([
-            'status' => AppConstants::PAYMENT_SESSION_STATUS_SUCCEEDED,
-            'provider_transaction_id' => $reference ?: $session->provider_transaction_id,
-            'provider_payment_link_id' => $paymentLinkId ?: $session->provider_payment_link_id,
-            'provider_order_code' => $orderCode ?: $session->provider_order_code,
-            'confirmed_at' => now(),
-        ]);
+        $this->paymentSessionService->markSucceededFromWebhook($session, $data);
 
         return $this->ok(true);
-    }
-
-    private function ensurePaymentSession(Order $order): PaymentSession
-    {
-        $existing = PaymentSession::query()
-            ->where('order_id', $order->id)
-            ->whereIn('status', [AppConstants::PAYMENT_SESSION_STATUS_CREATED, AppConstants::PAYMENT_SESSION_STATUS_PENDING])
-            ->where(function ($query) {
-                $query->whereNull('expires_at')->orWhere('expires_at', '>', now());
-            })
-            ->latest('created_at')
-            ->first();
-
-        if ($existing) {
-            return $existing;
-        }
-
-        return PaymentSession::query()->create([
-            'order_id' => $order->id,
-            'provider' => 'MANUAL_BANK_QR',
-            'status' => AppConstants::PAYMENT_SESSION_STATUS_PENDING,
-            'amount' => $order->total_price,
-            'reference' => $order->payment_reference ?: $this->buildReference($order->id),
-            'qr_url' => $this->buildQrUrl($order),
-            'payment_url' => null,
-            'provider_transaction_id' => null,
-            'provider_order_code' => null,
-            'provider_payment_link_id' => null,
-            'callback_token' => str_replace('-', '', (string) Str::uuid()),
-            'expires_at' => now()->addMinutes((int) env('APP_PAYMENT_BANK_TRANSFER_SESSION_EXPIRY_MINUTES', 15)),
-        ]);
-    }
-
-    private function buildQrUrl(Order $order): string
-    {
-        $bankId = env('APP_PAYMENT_BANK_TRANSFER_BANK_ID', '970418');
-        $accountNumber = env('APP_PAYMENT_BANK_TRANSFER_ACCOUNT_NUMBER', '8860383073');
-        $accountHolder = rawurlencode((string) env('APP_PAYMENT_BANK_TRANSFER_ACCOUNT_HOLDER', 'TRINH DUY NAM'));
-        $amount = (int) round((float) $order->total_price);
-        $reference = rawurlencode((string) ($order->payment_reference ?: $this->buildReference($order->id)));
-
-        return "https://img.vietqr.io/image/{$bankId}-{$accountNumber}-compact2.png?amount={$amount}&addInfo={$reference}&accountName={$accountHolder}";
     }
 
     private function cancelOrder(Order $order): void
@@ -407,6 +370,8 @@ class OrderController extends Controller
                 ->whereIn('status', [AppConstants::PAYMENT_SESSION_STATUS_CREATED, AppConstants::PAYMENT_SESSION_STATUS_PENDING])
                 ->update(['status' => AppConstants::PAYMENT_SESSION_STATUS_CANCELLED]);
         });
+
+        $this->cancelPaymentSessionIfNeeded($order);
     }
 
     private function normalizePaymentMethod(?string $paymentMethod): string
@@ -449,5 +414,25 @@ class OrderController extends Controller
         if ($order->user_id !== $this->currentUser($request)->id) {
             abort(404, 'Order not found');
         }
+    }
+
+    private function syncBankTransferPaymentIfNeeded(Order $order): void
+    {
+        if ($order->payment_method === AppConstants::PAYMENT_METHOD_BANK_TRANSFER) {
+            $this->paymentSessionService->syncPaymentSession($order);
+            $order->refresh();
+        }
+    }
+
+    private function cancelPaymentSessionIfNeeded(Order $order): void
+    {
+        if (
+            $order->payment_method !== AppConstants::PAYMENT_METHOD_BANK_TRANSFER
+            || in_array($order->payment_status, [AppConstants::PAYMENT_STATUS_PAID, AppConstants::PAYMENT_STATUS_REFUNDED], true)
+        ) {
+            return;
+        }
+
+        $this->paymentSessionService->cancelSession($order, 'Order cancelled '.$order->id);
     }
 }

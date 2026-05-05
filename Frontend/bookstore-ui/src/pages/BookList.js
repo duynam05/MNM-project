@@ -1,16 +1,23 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import BookCard from '../components/BookCard';
 import { Search } from 'lucide-react';
+
+import BookCard from '../components/BookCard';
 import { buildApiUrl, extractResultList } from '../config/api';
 
 const PAGE_SIZE = 12;
+
+const splitCategories = (value) =>
+  String(value || '')
+    .split(/\s*(?:,|;|\||\/|\s-\s)\s*/u)
+    .map((item) => item.trim())
+    .filter(Boolean);
 
 const BookList = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [books, setBooks] = useState([]);
   const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchParams.get('q') || '');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'All');
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'popular');
   const [page, setPage] = useState(Number(searchParams.get('page') || 0));
@@ -18,78 +25,6 @@ const BookList = () => {
   const [totalElements, setTotalElements] = useState(0);
   const [categories, setCategories] = useState(['All']);
   const [loading, setLoading] = useState(true);
-
-  const filteredBooks = useMemo(() => {
-    let result = books;
-  
-    if (selectedCategory !== 'All') {
-      result = result.filter(b => b.category === selectedCategory);
-    }
-  
-    if (debouncedSearchTerm) {
-      const lower = debouncedSearchTerm.toLowerCase();
-      result = result.filter(b =>
-        b.title.toLowerCase().includes(lower) ||
-        b.author.toLowerCase().includes(lower)
-      );
-    }
-  
-    result = [...result].sort((a, b) => {
-      switch (sortBy) {
-        case 'rating': return b.rating - a.rating;
-        case 'price_asc': return a.price - b.price;
-        case 'price_desc': return b.price - a.price;
-        default: return b.rating - a.rating;
-      }
-    });
-  
-    return result;
-  }, [books, debouncedSearchTerm, selectedCategory, sortBy]);
-
-
-  useEffect(() => {
-    setLoading(true);
-  
-    fetch(buildApiUrl('/books'))
-      .then(res => res.json())
-      .then(data => {
-        const bookList = extractResultList(data);
-
-        setBooks(bookList);
-
-        const categoryOptions = [
-          'All',
-          ...new Set(bookList.map(b => b.category).filter(Boolean))
-        ];
-        setCategories(categoryOptions);
-      })
-      .catch(err => console.error(err))
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => {
-    setTotalPages(Math.ceil(filteredBooks.length / PAGE_SIZE));
-    setTotalElements(filteredBooks.length);
-  }, [filteredBooks]);
-
-  const paginatedBooks = useMemo(() => {
-    const start = page * PAGE_SIZE;
-    return filteredBooks.slice(start, start + PAGE_SIZE);
-  }, [filteredBooks, page]);
-
-  useEffect(() => {
-    const maxPage = Math.max(Math.ceil(filteredBooks.length / PAGE_SIZE) - 1, 0);
-    if (page > maxPage) {
-      setPage(maxPage);
-    }
-  }, [filteredBooks, page]);
-
-  useEffect(() => {
-    setSearchTerm(searchParams.get('q') || '');
-    setSelectedCategory(searchParams.get('category') || 'All');
-    setSortBy(searchParams.get('sort') || 'popular');
-    setPage(Number(searchParams.get('page') || 0));
-  }, [searchParams]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -99,10 +34,14 @@ const BookList = () => {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  const searchParamsString = searchParams.toString();
+  useEffect(() => {
+    setSearchTerm(searchParams.get('q') || '');
+    setSelectedCategory(searchParams.get('category') || 'All');
+    setSortBy(searchParams.get('sort') || 'popular');
+    setPage(Number(searchParams.get('page') || 0));
+  }, [searchParams]);
 
   useEffect(() => {
-    const currentParams = new URLSearchParams(searchParamsString);
     const nextParams = new URLSearchParams();
 
     if (debouncedSearchTerm) {
@@ -117,30 +56,99 @@ const BookList = () => {
       nextParams.set('sort', sortBy);
     }
 
-    const currentQ = currentParams.get('q') || '';
-    const currentCategory = currentParams.get('category') || 'All';
-    const currentSort = currentParams.get('sort') || 'popular';
+    if (page > 0) {
+      nextParams.set('page', String(page));
+    }
+
+    const current = searchParams.toString();
+    const next = nextParams.toString();
+
+    if (current !== next) {
+      setSearchParams(nextParams, { replace: true });
+    }
+  }, [debouncedSearchTerm, page, searchParams, selectedCategory, setSearchParams, sortBy]);
+
+  useEffect(() => {
+    const currentQ = searchParams.get('q') || '';
+    const currentCategory = searchParams.get('category') || 'All';
+    const currentSort = searchParams.get('sort') || 'popular';
 
     if (
       debouncedSearchTerm !== currentQ ||
       selectedCategory !== currentCategory ||
       sortBy !== currentSort
     ) {
-      nextParams.set('page', '0'); // reset khi filter đổi
-    } else if (page > 0) {
-      nextParams.set('page', page.toString());
+      setPage(0);
+    }
+  }, [debouncedSearchTerm, searchParams, selectedCategory, sortBy]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const params = new URLSearchParams({
+      page: String(page),
+      size: String(PAGE_SIZE),
+      sort: sortBy,
+    });
+
+    if (debouncedSearchTerm) {
+      params.set('q', debouncedSearchTerm);
     }
 
-    // const current = searchParams.toString();
-    const next = nextParams.toString();
-    const current = searchParamsString;
-
-    if (current !== next) {
-      setSearchParams(nextParams, { replace: true });
+    if (selectedCategory !== 'All') {
+      params.set('category', selectedCategory);
     }
-  }, [debouncedSearchTerm, page, searchParamsString, selectedCategory, sortBy, setSearchParams]);
 
-  const hasBooks = filteredBooks.length > 0;
+    setLoading(true);
+
+    fetch(buildApiUrl(`/books?${params.toString()}`), { signal: controller.signal })
+      .then((res) => res.json())
+      .then((data) => {
+        setBooks(extractResultList(data));
+        setTotalPages(Number(data?.result?.totalPages || 0));
+        setTotalElements(Number(data?.result?.totalElements || 0));
+      })
+      .catch((err) => {
+        if (err.name !== 'AbortError') {
+          console.error(err);
+          setBooks([]);
+          setTotalPages(0);
+          setTotalElements(0);
+        }
+      })
+      .finally(() => setLoading(false));
+
+    return () => controller.abort();
+  }, [debouncedSearchTerm, page, selectedCategory, sortBy]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    fetch(buildApiUrl('/books?page=0&size=100&sort=title_asc'), { signal: controller.signal })
+      .then((res) => res.json())
+      .then((data) => {
+        const bookList = extractResultList(data);
+        const categoryOptions = [
+          'All',
+          ...new Set(
+            bookList.flatMap((book) => splitCategories(book.category)),
+          ),
+        ];
+        setCategories(categoryOptions);
+      })
+      .catch((err) => {
+        if (err.name !== 'AbortError') {
+          console.error(err);
+        }
+      });
+
+    return () => controller.abort();
+  }, []);
+
+  const hasBooks = books.length > 0;
+  const shownCount = useMemo(
+    () => (hasBooks ? page * PAGE_SIZE + books.length : 0),
+    [books.length, hasBooks, page],
+  );
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -162,7 +170,9 @@ const BookList = () => {
             setPage(0);
           }}
         >
-          {categories.map((c) => <option key={c}>{c}</option>)}
+          {categories.map((category) => (
+            <option key={category}>{category}</option>
+          ))}
         </select>
 
         <select
@@ -176,6 +186,8 @@ const BookList = () => {
           <option value="rating">Rating</option>
           <option value="price_asc">Giá tăng</option>
           <option value="price_desc">Giá giảm</option>
+          <option value="title_asc">Tên A-Z</option>
+          <option value="title_desc">Tên Z-A</option>
         </select>
       </div>
 
@@ -187,7 +199,7 @@ const BookList = () => {
 
       {hasBooks && (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
-          {paginatedBooks.map(book => (
+          {books.map((book) => (
             <BookCard key={book.id} book={book} />
           ))}
         </div>
@@ -196,7 +208,7 @@ const BookList = () => {
       {!loading && totalPages > 0 && (
         <div className="mt-8 flex flex-col items-center justify-between gap-4 md:flex-row">
           <div className="text-sm text-gray-600">
-            Hiển thị {page * PAGE_SIZE + paginatedBooks.length} / {totalElements} sản phẩm
+            Hiển thị {shownCount} / {totalElements} sản phẩm
           </div>
 
           <div className="flex items-center gap-3">

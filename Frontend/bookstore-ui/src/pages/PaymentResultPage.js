@@ -49,13 +49,17 @@ export default function PaymentResultPage() {
         if (!active) return;
         if (res.ok) {
           setOrder(data.result);
+          if (data?.result?.paymentStatus === 'PAID') {
+            setLoading(false);
+            return;
+          }
         }
       } finally {
         if (!active) return;
         attempts += 1;
         setLoading(false);
 
-        if (attempts < 12 && gatewayStatus === 'PAID' && (!order || order.paymentStatus !== 'PAID')) {
+        if (attempts < 12 && gatewayStatus === 'PAID') {
           setTimeout(fetchOrder, 5000);
         }
       }
@@ -66,7 +70,7 @@ export default function PaymentResultPage() {
     return () => {
       active = false;
     };
-  }, [gatewayStatus, order, orderId, token]);
+  }, [gatewayStatus, orderId, token]);
 
   if (!orderId) {
     return <div className="px-6 py-16 text-center text-slate-500">Thiếu thông tin đơn hàng.</div>;

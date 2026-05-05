@@ -40,10 +40,10 @@ Route::middleware('auth.jwt')->group(function () {
 
     Route::post('/api/orders', [OrderController::class, 'store']);
     Route::get('/api/orders', [OrderController::class, 'index']);
-    Route::get('/api/orders/{order}', [OrderController::class, 'show']);
-    Route::get('/api/orders/{order}/payment-session', [OrderController::class, 'paymentSession']);
-    Route::post('/api/orders/{order}/payment', [OrderController::class, 'pay']);
-    Route::post('/api/orders/{order}/cancel', [OrderController::class, 'cancel']);
+    Route::get('/api/orders/{order}', [OrderController::class, 'show'])->whereUuid('order');
+    Route::get('/api/orders/{order}/payment-session', [OrderController::class, 'paymentSession'])->whereUuid('order');
+    Route::post('/api/orders/{order}/payment', [OrderController::class, 'pay'])->whereUuid('order');
+    Route::post('/api/orders/{order}/cancel', [OrderController::class, 'cancel'])->whereUuid('order');
 
     Route::post('/books/{book}/reviews', [ReviewController::class, 'store']);
     Route::put('/books/{book}/reviews/{review}', [ReviewController::class, 'update']);
@@ -75,10 +75,10 @@ Route::middleware(['auth.jwt', 'role:ADMIN'])->group(function () {
     Route::post('/books/upload-image', [BookController::class, 'uploadImage']);
 
     Route::get('/api/orders/admin', [OrderController::class, 'adminIndex']);
-    Route::get('/api/orders/admin/{order}', [OrderController::class, 'adminShow']);
-    Route::get('/api/orders/admin/{order}/payment-session', [OrderController::class, 'adminPaymentSession']);
-    Route::patch('/api/orders/admin/{order}/status', [OrderController::class, 'adminUpdateStatus']);
-    Route::post('/api/orders/admin/{order}/confirm-payment', [OrderController::class, 'adminConfirmPayment']);
+    Route::get('/api/orders/admin/{order}', [OrderController::class, 'adminShow'])->whereUuid('order');
+    Route::get('/api/orders/admin/{order}/payment-session', [OrderController::class, 'adminPaymentSession'])->whereUuid('order');
+    Route::patch('/api/orders/admin/{order}/status', [OrderController::class, 'adminUpdateStatus'])->whereUuid('order');
+    Route::post('/api/orders/admin/{order}/confirm-payment', [OrderController::class, 'adminConfirmPayment'])->whereUuid('order');
 
     Route::get('/admin/settings', [SystemSettingController::class, 'show']);
     Route::put('/admin/settings', [SystemSettingController::class, 'update']);
