@@ -1,7 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import { CheckCircle2, ExternalLink, RefreshCw } from 'lucide-react';
 
-import { buildApiUrl } from '../config/api';
+import { buildApiUrl, resolveImageUrl } from '../config/api';
+import { useAuth } from '../contexts/AuthContext';
 
 const ORDER_STATUS_VI = {
   PENDING: 'Chờ xử lý',
@@ -24,6 +27,7 @@ const PAYMENT_METHOD_VI = {
   COD: 'Thanh toán khi nhận hàng',
   BANK_TRANSFER: 'Chuyển khoản ngân hàng',
   ONLINE: 'Thanh toán online',
+  E_WALLET: 'Ví điện tử',
 };
 
 function formatCurrency(value) {
@@ -51,60 +55,101 @@ function getTransferInfo(order) {
   };
 }
 
+function isPaymentConfirmed(order) {
+  return order?.paymentStatus === 'PAID' || order?.paymentSession?.status === 'SUCCEEDED';
+}
+
 export default function OrderDetailPage() {
   const { orderId } = useParams();
-  const token = localStorage.getItem('token');
+  const { token } = useAuth();
   const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [checkingPayment, setCheckingPayment] = useState(false);
 
-  useEffect(() => {
-    if (!token) return;
+  const fetchOrder = useCallback(async ({ silent = false } = {}) => {
+    if (!token || !orderId) return null;
 
-    const fetchOrder = async () => {
+    try {
+      if (!silent) {
+        setLoading(true);
+        setError('');
+      }
       const res = await fetch(buildApiUrl(`/api/orders/${orderId}/payment-session`), {
         headers: {
+          Accept: 'application/json',
           Authorization: `Bearer ${token}`,
         },
       });
 
-      const data = await res.json();
-      if (res.ok) setOrder(data.result);
-    };
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(data?.message || 'Không thể tải chi tiết đơn hàng');
+      }
 
-    fetchOrder();
+      setOrder(data.result);
+      return data.result;
+    } catch (err) {
+      if (!silent) {
+        setError(err.message || 'Không thể tải chi tiết đơn hàng');
+      }
+      return null;
+    } finally {
+      if (!silent) setLoading(false);
+    }
   }, [orderId, token]);
+
+  const checkPaymentNow = useCallback(async ({ silent = false } = {}) => {
+    try {
+      if (!silent) setCheckingPayment(true);
+
+      const latestOrder = await fetchOrder({ silent: true });
+      if (!latestOrder) {
+        if (!silent) toast.error('Không thể kiểm tra thanh toán. Vui lòng thử lại.');
+        return false;
+      }
+
+      if (isPaymentConfirmed(latestOrder)) {
+        if (!silent) toast.success('Hệ thống đã ghi nhận thanh toán thành công.');
+        return true;
+      }
+
+      if (!silent) {
+        toast.info('Hệ thống chưa ghi nhận giao dịch. Vui lòng chờ payOS hoặc ngân hàng xác nhận rồi kiểm tra lại.');
+      }
+      return false;
+    } finally {
+      if (!silent) setCheckingPayment(false);
+    }
+  }, [fetchOrder]);
+
+  useEffect(() => {
+    fetchOrder();
+  }, [fetchOrder]);
 
   useEffect(() => {
     if (!token || !orderId || !order) return undefined;
-    if (order.paymentMethod !== 'BANK_TRANSFER' || order.paymentStatus === 'PAID' || order.status === 'CANCELLED') {
+    if (order.paymentMethod !== 'BANK_TRANSFER' || isPaymentConfirmed(order) || order.status === 'CANCELLED') {
       return undefined;
     }
 
-    let active = true;
+    const intervalId = window.setInterval(() => {
+      checkPaymentNow({ silent: true });
+    }, 5000);
 
-    const pollOrder = async () => {
-      try {
-        const res = await fetch(buildApiUrl(`/api/orders/${orderId}/payment-session`), {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        const data = await res.json();
-        if (!active || !res.ok || !data?.result) return;
-        setOrder(data.result);
-      } catch {
-        // Ignore transient polling failures while waiting for payOS sync.
-      }
-    };
-
-    const intervalId = window.setInterval(pollOrder, 5000);
     return () => {
-      active = false;
       window.clearInterval(intervalId);
     };
-  }, [order, orderId, token]);
+  }, [
+    checkPaymentNow,
+    order,
+    orderId,
+    token,
+  ]);
 
-  if (!order) return <div className="p-10">Loading...</div>;
+  if (loading) return <div className="p-10 text-slate-500">Đang tải chi tiết đơn hàng...</div>;
+  if (error) return <div className="p-10 text-red-600">{error}</div>;
+  if (!order) return <div className="p-10 text-slate-500">Không tìm thấy đơn hàng.</div>;
 
   const transferReference = getTransferReference(order);
   const transferInfo = getTransferInfo(order);
@@ -142,6 +187,28 @@ export default function OrderDetailPage() {
             {transferInfo.expiresAt ? <p><b>Hiệu lực:</b> {new Date(transferInfo.expiresAt).toLocaleString('vi-VN')}</p> : null}
             {transferInfo.sessionStatus ? <p><b>Trạng thái phiên:</b> {transferInfo.sessionStatus}</p> : null}
           </div>
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+            <button
+              className="flex items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={checkingPayment}
+              type="button"
+              onClick={() => checkPaymentNow()}
+            >
+              {checkingPayment ? <RefreshCw className="animate-spin" size={18} /> : <CheckCircle2 size={18} />}
+              {checkingPayment ? 'Đang kiểm tra...' : 'Tôi đã thanh toán - kiểm tra ngay'}
+            </button>
+            {transferInfo.paymentUrl ? (
+              <a
+                className="flex items-center justify-center gap-2 rounded-xl border border-blue-200 bg-white px-4 py-3 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
+                href={transferInfo.paymentUrl}
+                rel="noreferrer"
+                target="_blank"
+              >
+                <ExternalLink size={18} />
+                Mở cổng thanh toán payOS
+              </a>
+            ) : null}
+          </div>
         </div>
       ) : null}
 
@@ -149,7 +216,7 @@ export default function OrderDetailPage() {
         <h2 className="mb-3 font-semibold">Sản phẩm</h2>
         {order.items?.map((item) => (
           <div key={item.id} className="flex gap-3 border-b py-2 last:border-b-0">
-            <img src={item.image} className="h-20 w-16 rounded object-cover" alt={item.title} />
+            <img src={resolveImageUrl(item.image)} className="h-20 w-16 rounded object-cover" alt={item.title} />
             <div className="flex-1">
               <p className="font-medium">{item.title}</p>
               <p className="text-sm text-gray-500">SL: {item.quantity}</p>

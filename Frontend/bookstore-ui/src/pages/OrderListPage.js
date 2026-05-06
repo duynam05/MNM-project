@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-import { buildApiUrl } from '../config/api';
+import { buildApiUrl, extractResultList } from '../config/api';
+import { useAuth } from '../contexts/AuthContext';
 
 const STATUS_COLOR = {
   PENDING: 'text-yellow-600',
@@ -25,6 +26,15 @@ const PAYMENT_METHOD_VI = {
   COD: 'Thanh toán khi nhận hàng',
   BANK_TRANSFER: 'Chuyển khoản ngân hàng',
   ONLINE: 'Thanh toán online',
+  E_WALLET: 'Ví điện tử',
+};
+
+const PAYMENT_STATUS_VI = {
+  UNPAID: 'Chưa thanh toán',
+  PENDING: 'Đang chờ xác nhận',
+  PAID: 'Đã thanh toán',
+  FAILED: 'Thanh toán thất bại',
+  REFUNDED: 'Đã hoàn tiền',
 };
 
 function formatCurrency(value) {
@@ -32,27 +42,61 @@ function formatCurrency(value) {
 }
 
 const OrderListPage = () => {
-  const token = localStorage.getItem('token');
+  const { token } = useAuth();
   const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchOrders = async () => {
-      const res = await fetch(buildApiUrl('/api/orders'), {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      try {
+        setLoading(true);
+        setError('');
 
-      const data = await res.json();
-      if (res.ok) setOrders(data.result || []);
+        const res = await fetch(buildApiUrl('/api/orders'), {
+          headers: {
+            Accept: 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = await res.json().catch(() => null);
+        if (!res.ok) {
+          throw new Error(data?.message || 'Không thể tải danh sách đơn hàng');
+        }
+
+        setOrders(extractResultList(data));
+      } catch (err) {
+        setError(err.message || 'Không thể tải danh sách đơn hàng');
+        setOrders([]);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    if (token) fetchOrders();
+    if (token) {
+      fetchOrders();
+    } else {
+      setLoading(false);
+      setOrders([]);
+    }
   }, [token]);
 
   return (
     <div className="mx-auto max-w-5xl p-6">
       <h1 className="mb-6 text-2xl font-bold">Đơn hàng của bạn</h1>
+
+      {loading ? (
+        <div className="rounded-2xl bg-white p-6 text-slate-500 shadow">Đang tải đơn hàng...</div>
+      ) : null}
+
+      {!loading && error ? (
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-600">{error}</div>
+      ) : null}
+
+      {!loading && !error && orders.length === 0 ? (
+        <div className="rounded-2xl bg-white p-6 text-slate-500 shadow">Bạn chưa có đơn hàng nào.</div>
+      ) : null}
 
       <div className="space-y-4">
         {orders.map((order) => (
@@ -75,6 +119,7 @@ const OrderListPage = () => {
 
             <div className="mt-2 text-xs uppercase tracking-wide text-slate-500">
               {PAYMENT_METHOD_VI[order.paymentMethod] || order.paymentMethod || 'Chưa có phương thức'}
+              {order.paymentStatus ? ` • ${PAYMENT_STATUS_VI[order.paymentStatus] || order.paymentStatus}` : ''}
             </div>
           </Link>
         ))}

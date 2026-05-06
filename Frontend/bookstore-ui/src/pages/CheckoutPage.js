@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { BadgeDollarSign, Landmark, Lock, Wallet } from 'lucide-react';
+import { BadgeDollarSign, CheckCircle2, ExternalLink, Landmark, Lock, RefreshCw, Wallet } from 'lucide-react';
 
 import { buildApiUrl } from '../config/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -72,6 +72,9 @@ function getTransferInfo(order) {
   };
 }
 
+function isPaymentConfirmed(order) {
+  return order?.paymentStatus === 'PAID' || order?.paymentSession?.status === 'SUCCEEDED';
+}
 
 async function fetchOrderById(orderId, token) {
   const response = await fetch(buildApiUrl(`/api/orders/${orderId}/payment-session`), {
@@ -103,8 +106,12 @@ const CheckoutPage = () => {
     couponCode: '',
   });
   const [loading, setLoading] = useState(false);
+  const [checkingPayment, setCheckingPayment] = useState(false);
   const [errors, setErrors] = useState({});
   const [bankTransferOrder, setBankTransferOrder] = useState(null);
+  const bankTransferOrderId = bankTransferOrder?.orderId;
+  const bankTransferPaymentStatus = bankTransferOrder?.paymentStatus;
+  const bankTransferSessionStatus = bankTransferOrder?.paymentSession?.status;
 
   useEffect(() => {
     if (!user) return;
@@ -115,36 +122,58 @@ const CheckoutPage = () => {
     }));
   }, [user]);
 
-  useEffect(() => {
-    if (!bankTransferOrder?.orderId) return undefined;
-    if (bankTransferOrder.paymentStatus === 'PAID') return undefined;
-
+  const checkBankTransferPayment = useCallback(async ({ silent = false } = {}) => {
+    if (!bankTransferOrderId) return false;
     const token = localStorage.getItem('token');
-    let active = true;
 
-    const pollOrderStatus = async () => {
-      try {
-        const latestOrder = await fetchOrderById(bankTransferOrder.orderId, token);
-        if (!active || !latestOrder) return;
+    try {
+      if (!silent) setCheckingPayment(true);
 
-        setBankTransferOrder(latestOrder);
-        if (latestOrder.paymentStatus === 'PAID') {
-          toast.success('Đã nhận thanh toán. Đang chuyển về trang đơn hàng.');
-          navigate(`/account/orders/${latestOrder.orderId}`, { replace: true });
-        }
-      } catch {
-        // Keep polling silently while the user is waiting on payment confirmation.
+      const latestOrder = await fetchOrderById(bankTransferOrderId, token);
+      if (!latestOrder) return false;
+
+      setBankTransferOrder(latestOrder);
+
+      if (isPaymentConfirmed(latestOrder)) {
+        toast.success('Đã nhận thanh toán. Đang chuyển về trang chi tiết đơn hàng.');
+        navigate(`/account/orders/${latestOrder.orderId}`, { replace: true });
+        return true;
       }
-    };
 
-    const intervalId = window.setInterval(pollOrderStatus, 5000);
-    pollOrderStatus();
+      if (!silent) {
+        toast.info('Hệ thống chưa ghi nhận giao dịch. Vui lòng chờ payOS hoặc ngân hàng xác nhận rồi kiểm tra lại.');
+      }
+
+      return false;
+    } catch (error) {
+      if (!silent) {
+        toast.error(error.message || 'Không thể kiểm tra thanh toán. Vui lòng thử lại.');
+      }
+      return false;
+    } finally {
+      if (!silent) setCheckingPayment(false);
+    }
+  }, [bankTransferOrderId, navigate]);
+
+  useEffect(() => {
+    if (!bankTransferOrderId) return undefined;
+    if (bankTransferPaymentStatus === 'PAID' || bankTransferSessionStatus === 'SUCCEEDED') return undefined;
+
+    const intervalId = window.setInterval(() => {
+      checkBankTransferPayment({ silent: true });
+    }, 5000);
+
+    checkBankTransferPayment({ silent: true });
 
     return () => {
-      active = false;
       window.clearInterval(intervalId);
     };
-  }, [bankTransferOrder, navigate]);
+  }, [
+    bankTransferOrderId,
+    bankTransferPaymentStatus,
+    bankTransferSessionStatus,
+    checkBankTransferPayment,
+  ]);
 
   const items = state?.items || [];
   const subtotal = items.reduce((sum, item) => sum + (Number(item.unitPrice) || 0) * item.quantity, 0);
@@ -270,6 +299,7 @@ const CheckoutPage = () => {
   if (bankTransferOrder) {
     const transferReference = getTransferReference(bankTransferOrder);
     const transferInfo = getTransferInfo(bankTransferOrder);
+    const paymentConfirmed = isPaymentConfirmed(bankTransferOrder);
 
     return (
       <main className="mx-auto max-w-4xl px-6 py-12 md:px-12 md:py-20">
@@ -342,7 +372,9 @@ const CheckoutPage = () => {
                 </div>
                 <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-4">
                   <span className="text-slate-500">Trạng thái</span>
-                  <span className="font-semibold text-amber-600">Chờ thanh toán</span>
+                  <span className={paymentConfirmed ? 'font-semibold text-green-600' : 'font-semibold text-amber-600'}>
+                    {paymentConfirmed ? 'Đã thanh toán' : 'Chờ thanh toán'}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-4">
                   <span className="text-slate-500">Phương thức</span>
@@ -359,11 +391,31 @@ const CheckoutPage = () => {
                   </div>
                 ) : null}
                 <div className="rounded-2xl bg-slate-50 p-4 text-slate-600">
-                  Hệ thống đang chờ webhook xác nhận từ payOS. Bạn có thể giữ nguyên trang này, khi thanh toán thành công hệ thống sẽ tự chuyển về trang đơn hàng.
+                  Hệ thống đang tự kiểm tra trạng thái thanh toán. Khi payOS xác nhận giao dịch thành công, trang sẽ tự chuyển sang chi tiết đơn hàng.
                 </div>
               </div>
 
               <div className="mt-6 flex flex-col gap-3">
+                <button
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-green-600 py-3 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={checkingPayment}
+                  type="button"
+                  onClick={() => checkBankTransferPayment()}
+                >
+                  {checkingPayment ? <RefreshCw className="animate-spin" size={18} /> : <CheckCircle2 size={18} />}
+                  {checkingPayment ? 'Đang kiểm tra...' : 'Tôi đã thanh toán - kiểm tra ngay'}
+                </button>
+                {transferInfo.paymentUrl ? (
+                  <a
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 py-3 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
+                    href={transferInfo.paymentUrl}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    <ExternalLink size={18} />
+                    Mở cổng thanh toán payOS
+                  </a>
+                ) : null}
                 <button className="w-full rounded-xl bg-blue-700 py-3 text-sm font-semibold text-white transition hover:bg-blue-800" type="button" onClick={() => navigate(`/account/orders/${bankTransferOrder.orderId}`)}>
                   Xem chi tiết đơn hàng
                 </button>
