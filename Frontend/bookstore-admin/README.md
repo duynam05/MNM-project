@@ -1,16 +1,43 @@
-# React + Vite
+# Bookstore Admin App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Đây là frontend quản trị của hệ thống bookstore. Ứng dụng được viết bằng React và Vite, dùng để quản lý dữ liệu vận hành của cửa hàng.
 
-Currently, two official plugins are available:
+## Chức năng chính
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Dashboard quản trị
+- Quản lý sách
+- Quản lý người dùng
+- Quản lý đơn hàng
+- Quản lý đánh giá
+- Quản lý cấu hình hệ thống
 
-## React Compiler
+## Cài đặt và chạy local
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```powershell
+npm install
+npm run dev
+```
 
-## Expanding the ESLint configuration
+Ứng dụng chạy local bằng Vite. Cấu hình `base` hiện tại là `/MNM-project/admin/` để phục vụ deploy GitHub Pages.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Biến môi trường
+
+Tạo file `.env` nếu cần override:
+
+```env
+VITE_API_BASE_URL=http://127.0.0.1:8000
+VITE_USER_APP_LOGIN_URL=http://127.0.0.1:3000/#/login
+```
+
+## Script hỗ trợ
+
+- `npm run dev`: chạy môi trường dev
+- `npm run build`: build production
+- `npm run lint`: kiểm tra lint
+- `npm run preview`: xem bản build local
+- `npm run deploy`: deploy GitHub Pages
+
+## Liên kết liên quan
+
+- README gốc của repo: [`../../README.md`](../../README.md)
+- Tài liệu chức năng: [`../../docs/README.md`](../../docs/README.md)

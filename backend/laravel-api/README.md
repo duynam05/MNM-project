@@ -1,6 +1,10 @@
 # Bookstore Laravel Backend
 
-Backend này thay thế `backend/project-web` Spring Boot bằng Laravel, giữ nguyên contract API mà frontend hiện tại đang gọi:
+Đây là backend Laravel 12 của hệ thống bookstore. Mục tiêu của phần này là thay thế backend Spring Boot cũ trong `backend/project-web` nhưng vẫn giữ API contract càng gần càng tốt để frontend không phải sửa lớn.
+
+## API chính
+
+Backend hiện phục vụ các nhóm API:
 
 - `auth/*`
 - `users/*`
@@ -11,53 +15,70 @@ Backend này thay thế `backend/project-web` Spring Boot bằng Laravel, giữ 
 - `api/orders/*`
 - `admin/settings`
 - `admin/reviews/*`
+- `api/payments/payos/webhook`
 
-## Cấu trúc
+## Cấu trúc đáng chú ý
 
-- `app/Http/Controllers/Api`: controller theo nhóm chức năng.
-- `app/Http/Middleware`: JWT auth, role check, CORS.
-- `app/Models`: model Eloquent cho user, role, book, cart, order, review, settings.
-- `app/Support`: helper response, serializer JSON, JWT service, constants.
-- `database/migrations`: schema cho bookstore.
+- `app/Http/Controllers/Api`: controller theo nhóm chức năng
+- `app/Http/Middleware`: JWT auth, kiểm tra role, CORS
+- `app/Models`: model Eloquent cho các thực thể chính
+- `app/Support`: `JwtService`, `ApiResponse`, `PayOsService`, `PaymentSessionService`
+- `routes/api.php`: định nghĩa route API
+- `routes/console.php`: command và scheduler
+- `database/migrations`: schema của hệ thống
 
-## Chạy local
-
-1. Cài dependency:
+## Cài đặt và chạy local
 
 ```powershell
 composer install
-```
-
-2. Tạo DB và migrate:
-
-```powershell
+Copy-Item .env.example .env
+php artisan key:generate
 php artisan migrate
 php artisan storage:link
-```
-
-3. Chạy API:
-
-```powershell
 php artisan serve --host=127.0.0.1 --port=8000
 ```
 
-## Tài khoản admin bootstrap
+## Cấu hình môi trường
 
-Mặc định trong `.env`:
+Các nhóm cấu hình quan trọng:
 
-- Email: `admin@admin.com`
-- Password: `12345678`
+- App URL: `APP_URL`
+- Database: `DB_*`
+- Cloudinary:
+  - `CLOUDINARY_CLOUD_NAME`
+  - `CLOUDINARY_API_KEY`
+  - `CLOUDINARY_API_SECRET`
+  - `CLOUDINARY_FOLDER`
+- payOS:
+  - `APP_PAYMENT_PAYOS_ENABLED`
+  - `APP_PAYMENT_PAYOS_USE_FOR_BANK_TRANSFER`
+  - `PAYOS_CLIENT_ID`
+  - `PAYOS_API_KEY`
+  - `PAYOS_CHECKSUM_KEY`
+  - `PAYOS_PARTNER_CODE`
+  - `APP_PAYMENT_PAYOS_WEBHOOK_URL`
+  - `APP_PAYMENT_PAYOS_RETURN_URL_BASE`
+  - `APP_PAYMENT_PAYOS_CANCEL_URL_BASE`
 
-Laravel sẽ tự tạo role `USER`, `ADMIN`, system settings mặc định và admin bootstrap khi bảng đã tồn tại.
+## Script hữu ích
 
-## Frontend local
+- `php artisan test`: chạy test backend
+- `php artisan route:list`: kiểm tra route
+- `php artisan payments:sync-payos`: đồng bộ payment session đang pending
+- `php artisan schedule:work`: chạy scheduler local
+
+## Tích hợp với frontend
 
 - `Frontend/bookstore-ui` mặc định gọi `http://127.0.0.1:8000`
 - `Frontend/bookstore-admin` mặc định gọi `http://127.0.0.1:8000`
-- Admin app mặc định: `http://127.0.0.1:5173`
-- User app login mặc định từ admin: `http://127.0.0.1:3000/#/login`
 
-Nếu cần đổi host/port, override bằng:
+Nếu thay đổi host hoặc port backend, cần cập nhật env của từng frontend:
 
 - User app: `REACT_APP_API_BASE_URL`, `REACT_APP_ADMIN_APP_URL`
 - Admin app: `VITE_API_BASE_URL`, `VITE_USER_APP_LOGIN_URL`
+
+## Ghi chú
+
+- Backend này đang là backend chính cho local và deploy.
+- Spring Boot cũ vẫn được giữ lại để đối chiếu nghiệp vụ khi cần parity.
+- Thông tin chi tiết cấp repo xem tại [`../../README.md`](../../README.md).
