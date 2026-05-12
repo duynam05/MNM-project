@@ -25,8 +25,8 @@ Lưu ý: cập nhật lại đúng theo thực tế nhóm trước khi nộp n�
 
 | Thành viên | Phụ trách chính | Mức độ đóng góp |
 | --- | --- | --- |
-| Trịnh Duy Nam | Backend Laravel API, xác thực JWT, giỏ hàng, đơn hàng, thanh toán, tích hợp Cloudinary/payOS, cấu hình deploy | Cập nhật theo thực tế nhóm |
-| Phạm Thị Phượng | Frontend người dùng, frontend quản trị, giao diện, luồng thao tác người dùng, tài liệu minh họa và kiểm thử giao diện | Cập nhật theo thực tế nhóm |
+| Trịnh Duy Nam | Đăng nhập, Đăng ký, Review, Frontend + backend Trang admin, thanh toán, tích hợp Cloudinary/payOS, cấu hình deploy | Cập nhật theo thực tế nhóm |
+| Phạm Thị Phượng | Frontend người dùng, Trang chủ, Đặt hàng, Đơn hàng, quản lý hồ sơ | Cập nhật theo thực tế nhóm |
 
 ## 4. Chức năng chính
 
