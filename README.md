@@ -315,12 +315,16 @@ npm run build
 ![Cài đặt 2](<./assets/admin/cài đặt/2.png>)
 ![Cài đặt 3](<./assets/admin/cài đặt/3.png>)
 
-## 13. Link online đã deploy
+## 13. Link video demo
+
+https://drive.google.com/drive/folders/1CIF085kHuwZnBgajU9SXHe_qOJbUwJXR
+
+## 14. Link online đã deploy
 
 - `Frontend user`: https://duynam05.github.io/MNM-project/
 - `Frontend admin`: https://duynam05.github.io/MNM-project/admin/
 
-## 14. Tài liệu tham khảo trong repo
+## 15. Tài liệu tham khảo trong repo
 
 - [docs/README.md](./docs/README.md): danh sách tài liệu chức năng
 - [docs/backend-function-deep-dive-vi.md](./docs/backend-function-deep-dive-vi.md): giải thích backend bằng tiếng Việt
@@ -329,7 +333,7 @@ npm run build
 - [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md): quy tắc ứng xử
 - [SECURITY.md](./SECURITY.md): quy trình báo cáo lỗi bảo mật
 
-## 15. Ghi chú
+## 16. Ghi chú
 
 - Backend hiện tại mặc định dùng port `8000`
 - Frontend người dùng và frontend quản trị là 2 ứng dụng riêng
@@ -337,6 +341,6 @@ npm run build
 - Nếu chạy local, cần kiểm tra lại cấu hình database, Cloudinary và payOS trước khi demo
 - Để test chức năng thanh toán, cần sử dụng link web đã deploy
 
-## 16. Giấy phép
+## 17. Giấy phép
 
 Dự án phát hành theo giấy phép [MIT](./LICENSE).
