@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ShoppingCart } from 'lucide-react';
 import { toast } from 'react-toastify';
 
-import StarRating from '../components/StarRating';
+import StarRating from '../components/StarRating'; 
 import { useAuth } from '../contexts/AuthContext';
 import { useHistory } from '../contexts/HistoryContext';
 import { buildApiUrl, resolveImageUrl } from '../config/api';

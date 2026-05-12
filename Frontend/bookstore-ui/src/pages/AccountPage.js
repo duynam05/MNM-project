@@ -3,7 +3,7 @@ import { Edit2, Eye, EyeOff, LogOut, MapPin, Phone, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext'; 
 import { buildApiUrl } from '../config/api';
 
 const PHONE_REGEX = /^0\d{9}$/;

@@ -5,7 +5,7 @@ import { BadgeDollarSign, CheckCircle2, ExternalLink, Landmark, Lock, RefreshCw,
 
 import { buildApiUrl } from '../config/api';
 import { useAuth } from '../contexts/AuthContext';
-import { useCartActions } from '../contexts/CartContext';
+import { useCartActions } from '../contexts/CartContext'; 
 
 const PHONE_REGEX = /^0\d{9}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
