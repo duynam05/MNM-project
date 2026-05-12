@@ -335,7 +335,6 @@ npm run build
 - Frontend người dùng và frontend quản trị là 2 ứng dụng riêng
 - Để đăng nhập vào admin, tài khoản cần có role `ADMIN`
 - Nếu chạy local, cần kiểm tra lại cấu hình database, Cloudinary và payOS trước khi demo
-- Thanh toán `ONLINE` hiện tại là luồng mô phỏng; nhánh tích hợp thực tế tập trung ở `BANK_TRANSFER`
 
 ## 16. Giấy phép
 
