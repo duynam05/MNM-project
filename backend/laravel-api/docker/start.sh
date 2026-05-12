@@ -2,6 +2,7 @@
 set -e
 
 mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views bootstrap/cache
+rm -f bootstrap/cache/*.php
 
 php artisan package:discover --ansi
 php artisan storage:link || true

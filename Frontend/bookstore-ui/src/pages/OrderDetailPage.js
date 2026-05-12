@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useLocation, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { CheckCircle2, ExternalLink, RefreshCw } from 'lucide-react';
 
@@ -61,16 +61,23 @@ function isPaymentConfirmed(order) {
 
 export default function OrderDetailPage() {
   const { orderId } = useParams();
+  const { state } = useLocation();
   const { token } = useAuth();
-  const [order, setOrder] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const preloadedOrder = state?.preloadedOrder || null;
+  const [order, setOrder] = useState(preloadedOrder);
+  const [loading, setLoading] = useState(!preloadedOrder);
   const [error, setError] = useState('');
   const [checkingPayment, setCheckingPayment] = useState(false);
+  const pollingPaymentRef = useRef(false);
 
   const fetchOrder = useCallback(async ({ silent = false } = {}) => {
     if (!token || !orderId) return null;
+    if (silent && pollingPaymentRef.current) return null;
 
     try {
+      if (silent) {
+        pollingPaymentRef.current = true;
+      }
       if (!silent) {
         setLoading(true);
         setError('');
@@ -95,6 +102,9 @@ export default function OrderDetailPage() {
       }
       return null;
     } finally {
+      if (silent) {
+        pollingPaymentRef.current = false;
+      }
       if (!silent) setLoading(false);
     }
   }, [orderId, token]);
@@ -124,8 +134,8 @@ export default function OrderDetailPage() {
   }, [fetchOrder]);
 
   useEffect(() => {
-    fetchOrder();
-  }, [fetchOrder]);
+    fetchOrder({ silent: !!preloadedOrder });
+  }, [fetchOrder, preloadedOrder]);
 
   useEffect(() => {
     if (!token || !orderId || !order) return undefined;

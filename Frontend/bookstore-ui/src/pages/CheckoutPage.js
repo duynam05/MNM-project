@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { BadgeDollarSign, CheckCircle2, ExternalLink, Landmark, Lock, RefreshCw, Wallet } from 'lucide-react';
@@ -109,6 +109,8 @@ const CheckoutPage = () => {
   const [checkingPayment, setCheckingPayment] = useState(false);
   const [errors, setErrors] = useState({});
   const [bankTransferOrder, setBankTransferOrder] = useState(null);
+  const pollingPaymentRef = useRef(false);
+  const redirectingOrderRef = useRef(false);
   const bankTransferOrderId = bankTransferOrder?.orderId;
   const bankTransferPaymentStatus = bankTransferOrder?.paymentStatus;
   const bankTransferSessionStatus = bankTransferOrder?.paymentSession?.status;
@@ -123,10 +125,12 @@ const CheckoutPage = () => {
   }, [user]);
 
   const checkBankTransferPayment = useCallback(async ({ silent = false } = {}) => {
-    if (!bankTransferOrderId) return false;
+    if (!bankTransferOrderId || redirectingOrderRef.current) return false;
+    if (pollingPaymentRef.current) return false;
     const token = localStorage.getItem('token');
 
     try {
+      pollingPaymentRef.current = true;
       if (!silent) setCheckingPayment(true);
 
       const latestOrder = await fetchOrderById(bankTransferOrderId, token);
@@ -135,8 +139,14 @@ const CheckoutPage = () => {
       setBankTransferOrder(latestOrder);
 
       if (isPaymentConfirmed(latestOrder)) {
-        toast.success('Đã nhận thanh toán. Đang chuyển về trang chi tiết đơn hàng.');
-        navigate(`/account/orders/${latestOrder.orderId}`, { replace: true });
+        if (!redirectingOrderRef.current) {
+          redirectingOrderRef.current = true;
+          toast.success('Đã nhận thanh toán. Đang chuyển về trang chi tiết đơn hàng.');
+          navigate(`/account/orders/${latestOrder.orderId}`, {
+            replace: true,
+            state: { preloadedOrder: latestOrder },
+          });
+        }
         return true;
       }
 
@@ -151,13 +161,16 @@ const CheckoutPage = () => {
       }
       return false;
     } finally {
+      pollingPaymentRef.current = false;
       if (!silent) setCheckingPayment(false);
     }
   }, [bankTransferOrderId, navigate]);
 
   useEffect(() => {
     if (!bankTransferOrderId) return undefined;
-    if (bankTransferPaymentStatus === 'PAID' || bankTransferSessionStatus === 'SUCCEEDED') return undefined;
+    if (bankTransferPaymentStatus === 'PAID' || bankTransferSessionStatus === 'SUCCEEDED' || redirectingOrderRef.current) {
+      return undefined;
+    }
 
     const intervalId = window.setInterval(() => {
       checkBankTransferPayment({ silent: true });
