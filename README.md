@@ -25,8 +25,8 @@ Lưu ý: cập nhật lại đúng theo thực tế nhóm trước khi nộp n�
 
 | Thành viên | Phụ trách chính | Mức độ đóng góp |
 | --- | --- | --- |
-| Trịnh Duy Nam | Đăng nhập, Đăng ký, Review, Frontend + backend Trang admin, thanh toán, tích hợp Cloudinary/payOS, cấu hình deploy backend + database| Cập nhật theo thực tế nhóm |
-| Phạm Thị Phượng | Frontend người dùng, Trang chủ, Đặt hàng, Đơn hàng, quản lý hồ sơ, deploy frontend | Cập nhật theo thực tế nhóm |
+| Trịnh Duy Nam | Đăng nhập, Đăng ký, Review, Frontend + backend Trang admin, Đặt hàng, thanh toán, tích hợp Cloudinary/payOS, cấu hình deploy backend + database| Cập nhật theo thực tế nhóm |
+| Phạm Thị Phượng | Frontend người dùng, Trang chủ, Danh sách sách, Chi tiết sách, Đơn hàng, quản lý hồ sơ, deploy frontend | Cập nhật theo thực tế nhóm |
 
 ## 4. Chức năng chính
 
