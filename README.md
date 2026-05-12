@@ -270,54 +270,57 @@ npm run build
 
 ## 11. Tài khoản demo
 
-Nếu nhóm chuẩn bị tài khoản demo cố định trước khi nộp, cập nhật tại đây.
-
-Hiện tại hệ thống hỗ trợ 2 cách dùng demo:
-
-- Tài khoản người dùng: có thể tự đăng ký mới qua `POST /auth/register`
-- Tài khoản quản trị: được bootstrap từ biến môi trường `APP_BOOTSTRAP_ADMIN_EMAIL` và `APP_BOOTSTRAP_ADMIN_PASSWORD`
-
-Mẫu điền khi nộp:
-
-- `User demo`: cập nhật trước khi nộp
-- `Admin demo`: cập nhật trước khi nộp
+- `User demo`
+  - Email: `a@gmail.com`
+  - Mật khẩu: `123456`
+- `Admin demo`
+  - Email: `admin@admin.com`
+  - Mật khẩu: `12345678`
 
 ## 12. Hình ảnh minh họa hệ thống
 
-Thêm ảnh chụp màn hình chính của hệ thống tại đây trước khi nộp. Nên tối thiểu có:
+### Giao diện người dùng
 
-- Trang chủ người dùng
-- Trang danh sách sách
-- Trang chi tiết sách
-- Trang giỏ hàng
-- Trang thanh toán/đặt hàng
-- Trang quản trị sách
-- Trang quản trị đơn hàng
-- Trang quản trị review
+![Trang chủ](<./assets/user/trang chủ/1.png>)
+![Đăng nhập](<./assets/user/đăng nhập/1.png>)
+![Đăng kí](<./assets/user/đăng kí/1.png>)
+![Danh sách sách](<./assets/user/sách/1.png>)
+![Chi tiết sách](<./assets/user/chi tiết sách/1.png>)
+![Giỏ hàng](<./assets/user/giỏ hàng/1.png>)
+![Thanh toán 1](<./assets/user/thanh toán/1.png>)
+![Thanh toán 2](<./assets/user/thanh toán/2.png>)
+![Đơn hàng 1](<./assets/user/đơn hàng/1.png>)
+![Đơn hàng 2](<./assets/user/đơn hàng/2.png>)
+![Quản lý hồ sơ 1](<./assets/user/quản lý hồ sơ/1.png>)
+![Quản lý hồ sơ 2](<./assets/user/quản lý hồ sơ/2.png>)
+![Quản lý hồ sơ 3](<./assets/user/quản lý hồ sơ/3.png>)
 
-Mẫu trình bày:
+### Giao diện quản trị
 
-```md
-![Trang chủ](duong-dan-anh-trang-chu.png)
-![Giỏ hàng](duong-dan-anh-gio-hang.png)
-![Quản trị đơn hàng](duong-dan-anh-admin-order.png)
-```
+![Bảng điều khiển 1](<./assets/admin/bảng điều khiển/1.png>)
+![Bảng điều khiển 2](<./assets/admin/bảng điều khiển/2.png>)
+![Quản lý người dùng 1](<./assets/admin/quản lý người dùng/1.png>)
+![Quản lý người dùng 2](<./assets/admin/quản lý người dùng/2.png>)
+![Quản lý người dùng 3](<./assets/admin/quản lý người dùng/3.png>)
+![Quản lý người dùng 4](<./assets/admin/quản lý người dùng/4.png>)
+![Quản lý sách 1](<./assets/admin/quản lý sách/1.png>)
+![Quản lý sách 2](<./assets/admin/quản lý sách/2.png>)
+![Quản lý sách 3](<./assets/admin/quản lý sách/3.png>)
+![Quản lý sách 4](<./assets/admin/quản lý sách/4.png>)
+![Quản lý đơn hàng 1](<./assets/admin/quản lý đơn hàng/1.png>)
+![Quản lý đơn hàng 2](<./assets/admin/quản lý đơn hàng/2.png>)
+![Quản lý đánh giá 1](<./assets/admin/quản lý đánh giá/1.png>)
+![Quản lý đánh giá 2](<./assets/admin/quản lý đánh giá/2.png>)
+![Cài đặt 1](<./assets/admin/cài đặt/1.png>)
+![Cài đặt 2](<./assets/admin/cài đặt/2.png>)
+![Cài đặt 3](<./assets/admin/cài đặt/3.png>)
 
-## 13. Link video demo
+## 13. Link online đã deploy
 
-Cập nhật link video demo tại đây trước khi nộp.
+- `Frontend user`: https://duynam05.github.io/MNM-project/
+- `Frontend admin`: https://duynam05.github.io/MNM-project/admin/
 
-- `Video demo`: cập nhật trước khi nộp
-
-## 14. Link online đã deploy
-
-Nếu nhóm đã deploy hệ thống, cập nhật link tại đây.
-
-- `Frontend user`: cập nhật trước khi nộp
-- `Frontend admin`: cập nhật trước khi nộp
-- `Backend API`: cập nhật trước khi nộp nếu có public endpoint
-
-## 15. Tài liệu tham khảo trong repo
+## 14. Tài liệu tham khảo trong repo
 
 - [docs/README.md](./docs/README.md): danh sách tài liệu chức năng
 - [docs/backend-function-deep-dive-vi.md](./docs/backend-function-deep-dive-vi.md): giải thích backend bằng tiếng Việt
@@ -326,7 +329,7 @@ Nếu nhóm đã deploy hệ thống, cập nhật link tại đây.
 - [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md): quy tắc ứng xử
 - [SECURITY.md](./SECURITY.md): quy trình báo cáo lỗi bảo mật
 
-## 16. Ghi chú
+## 15. Ghi chú
 
 - Backend hiện tại mặc định dùng port `8000`
 - Frontend người dùng và frontend quản trị là 2 ứng dụng riêng
@@ -334,6 +337,6 @@ Nếu nhóm đã deploy hệ thống, cập nhật link tại đây.
 - Nếu chạy local, cần kiểm tra lại cấu hình database, Cloudinary và payOS trước khi demo
 - Thanh toán `ONLINE` hiện tại là luồng mô phỏng; nhánh tích hợp thực tế tập trung ở `BANK_TRANSFER`
 
-## 17. Giấy phép
+## 16. Giấy phép
 
 Dự án phát hành theo giấy phép [MIT](./LICENSE).
