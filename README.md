@@ -16,7 +16,7 @@ Website quản lý và bán sách online N&P là đồ án web bán sách với 
 
 | Họ và tên | MSSV |
 | --- | --- |
-| Trịnh Duy Nam | 23810310255 |
+| Trịnh Duy Nam (Nhóm trưởng) | 23810310255 |
 | Phạm Thị Phượng | 23810310265 |
 
 ## 3. Phân công nhiệm vụ cụ thể
@@ -25,8 +25,8 @@ Lưu ý: cập nhật lại đúng theo thực tế nhóm trước khi nộp n�
 
 | Thành viên | Phụ trách chính | Mức độ đóng góp |
 | --- | --- | --- |
-| Trịnh Duy Nam | Đăng nhập, Đăng ký, Review, Frontend + backend Trang admin, thanh toán, tích hợp Cloudinary/payOS, cấu hình deploy | Cập nhật theo thực tế nhóm |
-| Phạm Thị Phượng | Frontend người dùng, Trang chủ, Đặt hàng, Đơn hàng, quản lý hồ sơ | Cập nhật theo thực tế nhóm |
+| Trịnh Duy Nam | Đăng nhập, Đăng ký, Review, Frontend + backend Trang admin, thanh toán, tích hợp Cloudinary/payOS, cấu hình deploy backend + database| Cập nhật theo thực tế nhóm |
+| Phạm Thị Phượng | Frontend người dùng, Trang chủ, Đặt hàng, Đơn hàng, quản lý hồ sơ, deploy frontend | Cập nhật theo thực tế nhóm |
 
 ## 4. Chức năng chính
 
