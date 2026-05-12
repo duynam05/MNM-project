@@ -335,6 +335,7 @@ npm run build
 - Frontend người dùng và frontend quản trị là 2 ứng dụng riêng
 - Để đăng nhập vào admin, tài khoản cần có role `ADMIN`
 - Nếu chạy local, cần kiểm tra lại cấu hình database, Cloudinary và payOS trước khi demo
+- Để test chức năng thanh toán, cần sử dụng link web đã deploy
 
 ## 16. Giấy phép
 
